@@ -3,6 +3,7 @@ package vn.tayjava.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class AuthenticationController {
 
     @PostMapping("/access-token")
     public ResponseEntity<TokenResponse> accessToken(@RequestBody SignInRequest request) {
-        return new ResponseEntity<>(authenticationService.authenticate(request), OK);
+        return new ResponseEntity<>(authenticationService.accessToken(request), OK);
     }
 
     @PostMapping("/refresh-token")
@@ -51,11 +52,11 @@ public class AuthenticationController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody String secretKey) {
-        return new ResponseEntity<>(authenticationService.confirmResetPassword(secretKey), OK);
+        return new ResponseEntity<>(authenticationService.resetPassword(secretKey), OK);
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody ResetPasswordDTO request) {
+    public ResponseEntity<String> changePassword(@RequestBody @Valid ResetPasswordDTO request) {
         return new ResponseEntity<>(authenticationService.changePassword(request), OK);
     }
 }

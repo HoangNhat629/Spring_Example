@@ -1,11 +1,18 @@
 package vn.tayjava.dto.request;
 
-import vn.tayjava.exception.InvalidDataException;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
 
-public record ResetPasswordDTO(String secretKey, String password, String confirmPassword) {
-    public ResetPasswordDTO {
-        if (!password.equals(confirmPassword)) {
-            throw new InvalidDataException("Password not match");
-        }
-    }
+@Getter
+public class ResetPasswordDTO {
+
+    @NotBlank(message = "secretKey must be not blank")
+    private String secretKey;
+
+    @NotBlank(message = "password must be not blank")
+    private String password;
+
+    @NotBlank(message = "confirmPassword must be not blank")
+    private String confirmPassword;
+
 }

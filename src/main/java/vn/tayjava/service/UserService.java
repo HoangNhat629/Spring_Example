@@ -17,6 +17,8 @@ public interface UserService {
 
     long saveUser(UserRequestDTO request);
 
+    long saveUser(User user);
+
     void updateUser(long userId, UserRequestDTO request);
 
     void changeStatus(long userId, UserStatus status);

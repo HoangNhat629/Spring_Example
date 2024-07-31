@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.tayjava.dto.request.ResetPasswordDTO;
 import vn.tayjava.dto.request.SignInRequest;
@@ -26,14 +27,18 @@ import static vn.tayjava.util.TokenType.*;
 public class AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final UserService userService;
     private final JwtService jwtService;
 
-    public TokenResponse authenticate(SignInRequest signInRequest) {
+    public TokenResponse accessToken(SignInRequest signInRequest) {
         log.info("---------- authenticate ----------");
 
         var user = userService.getByUsername(signInRequest.getUsername());
+        if (!user.isEnabled()) {
+            throw new InvalidDataException("User not active");
+        }
 
         List<String> roles = userService.getAllRolesByUserId(user.getId());
         List<SimpleGrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new).toList();
@@ -103,9 +108,10 @@ public class AuthenticationService {
         }
 
         final String userName = jwtService.extractUsername(token, ACCESS_TOKEN);
+
         tokenService.delete(userName);
 
-        return "Deleted!";
+        return "Removed!";
     }
 
     /**
@@ -122,11 +128,15 @@ public class AuthenticationService {
         // generate reset token
         String resetToken = jwtService.generateResetToken(user);
 
-
         // save to db
         tokenService.save(Token.builder().username(user.getUsername()).resetToken(resetToken).build());
 
         // TODO send email to user
+        String confirmLink = String.format("curl --location 'http://localhost:80/auth/reset-password' \\\n" +
+                "--header 'accept: */*' \\\n" +
+                "--header 'Content-Type: application/json' \\\n" +
+                "--data '%s'", resetToken);
+        log.info("--> confirmLink: {}", confirmLink);
 
         return resetToken;
     }
@@ -137,22 +147,51 @@ public class AuthenticationService {
      * @param secretKey
      * @return
      */
-    public String confirmResetPassword(String secretKey) {
-        log.info("---------- confirmResetPassword ----------");
+    public String resetPassword(String secretKey) {
+        log.info("---------- resetPassword ----------");
 
         // validate token
-        var userName = jwtService.extractUsername(secretKey, RESET_TOKEN);
+        var user = validateToken(secretKey);
 
-        // check secretKey in db
-        tokenService.getByUsername(userName);
+        // check token by username
+        tokenService.getByUsername(user.getUsername());
 
-        return userName;
+        return "Reset";
     }
 
-    public String changePassword(ResetPasswordDTO pwd) {
+    public String changePassword(ResetPasswordDTO request) {
         log.info("---------- changePassword ----------");
-        log.info("Password: {}", pwd.password());
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new InvalidDataException("Passwords do not match");
+        }
+
+        // get user by reset token
+        var user = validateToken(request.getSecretKey());
+
+        // update password
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userService.saveUser(user);
 
         return "Changed";
+    }
+
+    /**
+     * Validate user and reset token
+     *
+     * @param token
+     * @return
+     */
+    private User validateToken(String token) {
+        // validate token
+        var userName = jwtService.extractUsername(token, RESET_TOKEN);
+
+        // validate user is active or not
+        var user = userService.getByUsername(userName);
+        if (!user.isEnabled()) {
+            throw new InvalidDataException("User not active");
+        }
+
+        return user;
     }
 }
