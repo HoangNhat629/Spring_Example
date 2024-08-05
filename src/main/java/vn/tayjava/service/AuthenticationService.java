@@ -13,8 +13,9 @@ import vn.tayjava.dto.request.ResetPasswordDTO;
 import vn.tayjava.dto.request.SignInRequest;
 import vn.tayjava.dto.response.TokenResponse;
 import vn.tayjava.exception.InvalidDataException;
-import vn.tayjava.model.Token;
+import vn.tayjava.model.RedisToken;
 import vn.tayjava.model.User;
+import vn.tayjava.service.impl.RedisTokenService;
 
 import java.util.List;
 
@@ -27,13 +28,14 @@ import static vn.tayjava.util.TokenType.*;
 public class AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
+    private final RedisTokenService redisTokenService;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final UserService userService;
     private final JwtService jwtService;
 
     public TokenResponse accessToken(SignInRequest signInRequest) {
-        log.info("---------- authenticate ----------");
+        log.info("---------- accessToken ----------");
 
         var user = userService.getByUsername(signInRequest.getUsername());
         if (!user.isEnabled()) {
@@ -52,7 +54,8 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(user);
 
         // save token to db
-        tokenService.save(Token.builder().username(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
+        // tokenService.save(Token.builder().username(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
+        redisTokenService.save(RedisToken.builder().id(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -84,7 +87,8 @@ public class AuthenticationService {
         String accessToken = jwtService.generateToken(user);
 
         // save token to db
-        tokenService.save(Token.builder().username(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
+       // tokenService.save(Token.builder().username(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
+        redisTokenService.save(RedisToken.builder().id(user.getUsername()).accessToken(accessToken).refreshToken(refreshToken).build());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)
@@ -109,7 +113,8 @@ public class AuthenticationService {
 
         final String userName = jwtService.extractUsername(token, ACCESS_TOKEN);
 
-        tokenService.delete(userName);
+        // tokenService.delete(userName);
+        redisTokenService.remove(userName);
 
         return "Removed!";
     }
@@ -129,7 +134,8 @@ public class AuthenticationService {
         String resetToken = jwtService.generateResetToken(user);
 
         // save to db
-        tokenService.save(Token.builder().username(user.getUsername()).resetToken(resetToken).build());
+        // tokenService.save(Token.builder().username(user.getUsername()).resetToken(resetToken).build());
+        redisTokenService.save(RedisToken.builder().id(user.getUsername()).resetToken(resetToken).build());
 
         // TODO send email to user
         String confirmLink = String.format("curl --location 'http://localhost:80/auth/reset-password' \\\n" +
@@ -147,8 +153,8 @@ public class AuthenticationService {
      * @param secretKey
      * @return
      */
-    public String confirmResetPassword(String secretKey) {
-        log.info("---------- confirmResetPassword ----------");
+    public String resetPassword(String secretKey) {
+        log.info("---------- resetPassword ----------");
 
         // validate token
         var user = validateToken(secretKey);
@@ -185,6 +191,9 @@ public class AuthenticationService {
     private User validateToken(String token) {
         // validate token
         var userName = jwtService.extractUsername(token, RESET_TOKEN);
+
+        // check token in redis
+        redisTokenService.isExists(userName);
 
         // validate user is active or not
         var user = userService.getByUsername(userName);

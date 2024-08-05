@@ -52,7 +52,7 @@ public class AuthenticationController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody String secretKey) {
-        return new ResponseEntity<>(authenticationService.confirmResetPassword(secretKey), OK);
+        return new ResponseEntity<>(authenticationService.resetPassword(secretKey), OK);
     }
 
     @PostMapping("/change-password")
