@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+
+  backup-job:
+    container_name: backup-job
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
