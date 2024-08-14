@@ -18,3 +18,22 @@
 - Java 17
 - Spring Boot 3.2.3
 - Maven 3.5+
+
+
+--- Run job by k8s job---
+$ minikube start
+
+- Run job
+$ kubectl apply -f backupJob.yaml
+
+- Watch jobs
+$ kubectl get jobs --watch
+or
+$ kubectl get cronjob {jobName}
+
+- Get all pods
+$ kubectl get pods
+
+- View log on pod
+$ kubectl logs -n default {backup-data-xxx}
+

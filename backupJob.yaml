@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-data
+  namespace: default
+spec:
+  schedule: "* 8 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup-data
+              image: nginx:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  apt-get update
+                  apt-get install -y git curl libmcrypt-dev default-mysql-client
+                  apt-get install sshpass
+                  echo Connect database
+                  DB_HOST=mysql
+                  DB_PORT=4306
+                  DB_USER=root
+                  DB_PASSWORD=password
+                  DB_NAME=mysql
+                  FILE_NAME=feednexa-$(date +%F).sql.gz
+                  echo hostname=$DB_HOST
+                  echo port=$DB_PORT
+                  echo user=$DB_USER
+                  echo password=$DB_PASSWORD
+                  echo database=$DB_NAME
+                  which mysqldump
+                  mkdir backup
+                  mysqldump -h $DB_HOST -u $user -p$DB_PASSWORD $DB_NAME | gzip > backup/"$FILE_NAME"
+                  ls -la backup
+                  VPS_HOST=root@66.94.125.167
+                  VPS_PASSWORD=88Q7M3PTwUL5fM
+                  echo Begin upload at $(date)
+                  sshpass -p $VPS_PASSWORD scp "$FILE_NAME" $VPS_HOST:/backup/"$FILE_NAME"
+                  echo Finish upload at $(date)
+                  rm -rf "$FILE_NAME"
+                - exit
+          restartPolicy: OnFailure

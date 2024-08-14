@@ -1,5 +1,5 @@
 #!/bin/zsh
-echo $SHELL
+echo "$SHELL"
 echo "Datetime: $(date)"
 
 # Backup database from server
@@ -8,33 +8,43 @@ hostname=127.0.0.1
 user=root
 password=password
 database=test_db
+fileName=feednexa-$(date +%F).sql.gz
 
-echo "hostname: ${hostname}"
-echo "user: ${user}"
-echo "password: ${password}"
-echo "database: ${database}"
+echo "hostname: $(hostname)"
+echo "user: $(user)"
+echo "password: $(password)"
+echo "database: $(database)"
 
 # Execute backup database
-mysqldump -h ${hostname} -u ${user} -p${password} ${database} | gzip > feednexa-$(date +%F).sql.gz
+mysqldump -h $hostname -u $user -p$password $database | gzip > "$fileName"
 
 sleep 1
 
 # Check file exists or not
-if [ -e feednexa-$(date +%F).sql.gz ]
+if [ -e "$fileName" ]
 then
-  echo "Backup successfully"
+  echo "Backup file: $fileName"
 else
   echo "Backup was failure"
 fi
 
 sleep 1
 
+# Install sshpass
+# sudo apt-get install sshpass
+
+## VPS
+serverHost=root@66.94.125.167
+serverPassword=88Q7M3PTwUL5fM
+
 # Connect remote server
-sshpass -p '88Q7M3PTwUL5fM' scp feednexa-$(date +%F).sql.gz root@66.94.125.167:/backup/feednexa-$(date +%F).sql.gz
+echo "Begin upload at $(date)"
+sshpass -p $serverPassword scp "$fileName" $serverHost:/backup/"$fileName"
+echo "Finish upload at $(date)"
 
 sleep 1
 
 # Remove file backup
-rm -rf feednexa-$(date +%F).sql.gz
+#rm -rf "$fileName"
 
 exit
