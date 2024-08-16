@@ -1,0 +1,49 @@
+#  https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-data
+  namespace: default
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup-data
+              image: nginx:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  apt-get update
+                  apt-get install -y git curl libmcrypt-dev default-mysql-client
+                  apt-get install sshpass
+                  echo Connect database
+                  DB_HOST=127.0.0.1
+                  DB_PORT=3306
+                  DB_USER=root
+                  DB_PASSWORD=password
+                  DB_NAME=mysql
+                  FILE_NAME=feednexa-$(date +%F).sql
+                  echo hostname=$DB_HOST
+                  echo port=$DB_PORT
+                  echo user=$DB_USER
+                  echo password=$DB_PASSWORD
+                  echo database=$DB_NAME
+                  which mysqldump
+                  mkdir backup
+                  mysqldump -h $DB_HOST -P $DB_PORT -u $user -p$DB_PASSWORD $DB_NAME component > backup/"$FILE_NAME"
+                  ls -la backup
+                  sleep 10000000
+                  cat $FILE_NAME
+                  VPS_HOST=root@IP
+                  VPS_PASSWORD=XXX
+                  echo Begin upload at $(date)
+                  sshpass -p $VPS_PASSWORD scp "$FILE_NAME" $VPS_HOST:/backup/"$FILE_NAME"
+                  echo Finish upload at $(date)
+                  rm -rf "$FILE_NAME"
+                - exit
+          restartPolicy: OnFailure
