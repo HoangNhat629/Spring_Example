@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.format.annotation.DateTimeFormat;
 import vn.tayjava.util.PhoneNumber;
 
 import java.io.Serializable;
@@ -27,9 +26,9 @@ public class UserRequestDTO implements Serializable {
     @PhoneNumber(message = "phone invalid format")
     private String phone;
 
+    // Update code ngày 16/8/2024
     @NotNull(message = "dateOfBirth must be not null")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @JsonFormat(pattern = "MM/dd/yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     private Date dateOfBirth;
 
     @NotNull(message = "username must be not null")
