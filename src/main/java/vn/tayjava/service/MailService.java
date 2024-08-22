@@ -10,8 +10,13 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -20,12 +25,17 @@ import java.util.Objects;
 public class MailService {
 
     private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
 
     @Value("${spring.mail.from}")
     private String emailFrom;
 
+    @Value("${spring.application.serverName}")
+    private String serverName;
+
     /**
      * Send email by Google SMTP
+     *
      * @param recipients
      * @param subject
      * @param content
@@ -61,5 +71,36 @@ public class MailService {
         log.info("Email has sent to successfully, recipients: {}", recipients);
 
         return "Sent";
+    }
+
+    /**
+     * Send link confirm to email register.
+     *
+     * @param emailTo
+     * @param resetToken
+     * @throws MessagingException
+     * @throws UnsupportedEncodingException
+     */
+    public void sendConfirmLink(String emailTo, String resetToken) throws MessagingException, UnsupportedEncodingException {
+        log.info("Sending confirming link to user, email={}", emailTo);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
+        Context context = new Context();
+
+        String linkConfirm = String.format("%s/auth/reset-password?secretKey=%s", serverName, resetToken);
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("linkConfirm", linkConfirm);
+        context.setVariables(properties);
+
+        helper.setFrom(emailFrom, "Tây Java");
+        helper.setTo(emailTo);
+        helper.setSubject("Please confirm your account");
+        String html = templateEngine.process("confirm-email.html", context);
+        helper.setText(html, true);
+
+        mailSender.send(message);
+        log.info("Confirming link has sent to user, email={}, linkConfirm={}", emailTo, linkConfirm);
     }
 }

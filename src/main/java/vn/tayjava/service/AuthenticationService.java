@@ -32,6 +32,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final UserService userService;
+    private final MailService mailService;
     private final JwtService jwtService;
 
     public TokenResponse accessToken(SignInRequest signInRequest) {
@@ -137,12 +138,13 @@ public class AuthenticationService {
         // tokenService.save(Token.builder().username(user.getUsername()).resetToken(resetToken).build());
         redisTokenService.save(RedisToken.builder().id(user.getUsername()).resetToken(resetToken).build());
 
-        // TODO send email to user
-        String confirmLink = String.format("curl --location 'http://localhost:80/auth/reset-password' \\\n" +
-                "--header 'accept: */*' \\\n" +
-                "--header 'Content-Type: application/json' \\\n" +
-                "--data '%s'", resetToken);
-        log.info("--> confirmLink: {}", confirmLink);
+        try {
+            mailService.sendConfirmLink(email, resetToken);
+        } catch (Exception e) {
+            log.error("Send email fail, errorMessage={}", e.getMessage());
+            throw new InvalidDataException("Send email fail, please try again!");
+        }
+
 
         return resetToken;
     }

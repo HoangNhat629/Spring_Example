@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.tayjava.dto.request.ResetPasswordDTO;
 import vn.tayjava.dto.request.SignInRequest;
 import vn.tayjava.dto.response.TokenResponse;
@@ -50,8 +47,8 @@ public class AuthenticationController {
         return new ResponseEntity<>(authenticationService.forgotPassword(email), OK);
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody String secretKey) {
+    @GetMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestParam String secretKey) {
         return new ResponseEntity<>(authenticationService.resetPassword(secretKey), OK);
     }
 

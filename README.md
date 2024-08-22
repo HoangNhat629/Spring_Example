@@ -23,15 +23,12 @@
 - Docker, Docker compose
 
 ---
-
-## Series API Security
- - [API Security](https://tayjava.vn)
- - [Top 4 Cơ Chế Bảo Mật Phổ Biến Hiện Nay](https://tayjava.vn/top-4-co-che-bao-mat-pho-bien-hien-nay)
-
-## Link Video
-- YouTube: [1. API Security - Cơ Chế Bảo Mật và Database Phân Quyền](https://youtu.be/S9r7OJt5zfs)
-- YouTube: [2. API Security - Mô Tả Chi Tiết Cách Phân Quyền Trên Database và @ManyToMany Trong Entity](https://youtu.be/TmLbs34mPo8)
-
-## Lấy Source Code Về
-- git clone https://github.com/luongquoctay87/tayjava-sample-code.git
-- git checkout api-security
+## Thiết lập Gmail
+Để cho phép gửi email qua Gmail ta cần thực hiện 2 bước sau
+- Step 1: Cho phép xác thực 2 nhân tố: https://myaccount.google.com/signinoptions/two-step-verification/enroll-welcome
+- Step 2: Tạo app chỉ định password: https://myaccount.google.com/apppasswords
+- Step 3: Gán thông tin vào mail sender
+```properties
+spring.mail.username=quoctay87
+spring.mail.password=xxx
+```

@@ -3,6 +3,7 @@ server:
 spring:
   application:
     name: tay-java-app
+    serverName: ${DOMAIN_NAME:http://localhost:80}
   profiles:
     active: @spring.profiles.active@
 
