@@ -15,7 +15,6 @@ import vn.tayjava.dto.response.TokenResponse;
 import vn.tayjava.exception.InvalidDataException;
 import vn.tayjava.model.RedisToken;
 import vn.tayjava.model.User;
-import vn.tayjava.service.impl.RedisTokenService;
 
 import java.util.List;
 

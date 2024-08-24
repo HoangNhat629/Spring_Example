@@ -1,4 +1,4 @@
-package vn.tayjava.service.impl;
+package vn.tayjava.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
