@@ -34,8 +34,8 @@ sleep 1
 # sudo apt-get install sshpass
 
 ## VPS
-serverHost=root@66.94.125.167
-serverPassword=88Q7M3PTwUL5fM
+serverHost=root@ip
+serverPassword=xxx
 
 # Connect remote server
 echo "Begin upload at $(date)"

@@ -36,8 +36,8 @@ spec:
                   mkdir backup
                   mysqldump -h $DB_HOST -u $user -p$DB_PASSWORD $DB_NAME | gzip > backup/"$FILE_NAME"
                   ls -la backup
-                  VPS_HOST=root@66.94.125.167
-                  VPS_PASSWORD=88Q7M3PTwUL5fM
+                  VPS_HOST=root@ip
+                  VPS_PASSWORD=xxx
                   echo Begin upload at $(date)
                   sshpass -p $VPS_PASSWORD scp "$FILE_NAME" $VPS_HOST:/backup/"$FILE_NAME"
                   echo Finish upload at $(date)
