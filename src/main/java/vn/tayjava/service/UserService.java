@@ -13,6 +13,8 @@ public interface UserService {
 
     void changeStatus(long userId, UserStatus status);
 
+    String confirmUser(int userId, String verifyCode);
+
     void deleteUser(long userId);
 
     UserDetailResponse getUser(long userId);

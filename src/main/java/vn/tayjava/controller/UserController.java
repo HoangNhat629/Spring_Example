@@ -70,6 +70,20 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Confirm user", description = "Send a request via this API to confirm user")
+    @PatchMapping("/confirm/{userId}")
+    public ResponseData<String> confirm(@Min(1) @PathVariable int userId, @RequestParam String verifyCode) {
+        log.info("Confirm user, userId={}, verifyCode={}", userId, verifyCode);
+
+        try {
+            userService.confirmUser(userId, verifyCode);
+            return new ResponseData<>(HttpStatus.ACCEPTED.value(), "User has confirmed successfully");
+        } catch (Exception e) {
+            log.error("errorMessage={}", e.getMessage(), e.getCause());
+            return new ResponseError(HttpStatus.BAD_REQUEST.value(), "User was failed");
+        }
+    }
+
     @Operation(summary = "Delete user permanently", description = "Send a request via this API to delete user permanently")
     @DeleteMapping("/{userId}")
     public ResponseData<?> deleteUser(@PathVariable @Min(value = 1, message = "userId must be greater than 0") int userId) {

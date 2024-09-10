@@ -102,6 +102,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public String confirmUser(int userId, String verifyCode) {
+        return "Confirmed!";
+    }
+
+    @Override
     public void deleteUser(long userId) {
         userRepository.deleteById(userId);
     }
