@@ -26,11 +26,14 @@
 - Docker, Docker compose
 
 ---
-## Topic: Spring Data JPA - Series
+## Thiết lập Gmail
+Để cho phép gửi email qua Gmail ta cần thực hiện 2 bước sau
 
-## Link Video
+- Step 1: Cho phép xác thực 2 nhân tố: https://myaccount.google.com/signinoptions/two-step-verification/enroll-welcome
+- Step 2: Tạo app chỉ định password: https://myaccount.google.com/apppasswords
+- Step 3: Gán thông tin vào mail sender
 
-
-## Lấy Source Code Về
-- git clone https://github.com/luongquoctay87/tayjava-sample-code.git
-- git checkout send-email
+```
+spring.mail.username=quoctay87
+spring.mail.password=xxx
+```
