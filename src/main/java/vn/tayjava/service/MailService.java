@@ -31,7 +31,7 @@ public class MailService {
     private String emailFrom;
 
     @Value("${endpoint.confirmUser}")
-    private String endpointConfirmUser;
+    private String apiConfirmUser;
 
     /**
      * Send email by Google SMTP
@@ -82,7 +82,7 @@ public class MailService {
      * @throws MessagingException
      * @throws UnsupportedEncodingException
      */
-    public void sendConfirmLink(String emailTo, int userId, String verifyCode) throws MessagingException, UnsupportedEncodingException {
+    public void sendConfirmLink(String emailTo, long userId, String verifyCode) throws MessagingException, UnsupportedEncodingException {
         log.info("Sending confirming link to user, email={}", emailTo);
 
         MimeMessage message = mailSender.createMimeMessage();
@@ -90,7 +90,7 @@ public class MailService {
         Context context = new Context();
 
         // http://localhost:80/user/confirm/{userId}?verifyCode={verifyCode}
-        String linkConfirm = String.format("%s/%s?verifyCode=%s", endpointConfirmUser, userId, verifyCode);
+        String linkConfirm = String.format("%s/%s?verifyCode=%s", apiConfirmUser, userId, verifyCode);
 
         Map<String, Object> properties = new HashMap<>();
         properties.put("linkConfirm", linkConfirm);

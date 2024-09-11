@@ -71,7 +71,7 @@ public class UserController {
     }
 
     @Operation(summary = "Confirm user", description = "Send a request via this API to confirm user")
-    @PatchMapping("/confirm/{userId}")
+    @GetMapping("/confirm/{userId}")
     public ResponseData<String> confirm(@Min(1) @PathVariable int userId, @RequestParam String verifyCode) {
         log.info("Confirm user, userId={}, verifyCode={}", userId, verifyCode);
 
@@ -80,7 +80,7 @@ public class UserController {
             return new ResponseData<>(HttpStatus.ACCEPTED.value(), "User has confirmed successfully");
         } catch (Exception e) {
             log.error("errorMessage={}", e.getMessage(), e.getCause());
-            return new ResponseError(HttpStatus.BAD_REQUEST.value(), "User was failed");
+            return new ResponseError(HttpStatus.BAD_REQUEST.value(), "Confirm was failed");
         }
     }
 

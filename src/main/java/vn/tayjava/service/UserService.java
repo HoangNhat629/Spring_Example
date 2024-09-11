@@ -1,13 +1,16 @@
 package vn.tayjava.service;
 
+import jakarta.mail.MessagingException;
 import vn.tayjava.dto.request.UserRequestDTO;
 import vn.tayjava.dto.response.PageResponse;
 import vn.tayjava.dto.response.UserDetailResponse;
 import vn.tayjava.util.UserStatus;
 
+import java.io.UnsupportedEncodingException;
+
 public interface UserService {
 
-    long saveUser(UserRequestDTO request);
+    long saveUser(UserRequestDTO request) throws MessagingException, UnsupportedEncodingException;
 
     void updateUser(long userId, UserRequestDTO request);
 

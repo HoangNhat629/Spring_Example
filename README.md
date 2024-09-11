@@ -27,14 +27,10 @@
 
 ---
 ## Topic: Spring Data JPA - Series
- - [Tây Java](https://tayjava.vn)
 
 ## Link Video
-- [Bài 13. Spring Data JPA - Phần 1](https://youtu.be/KBj76wrePCA)
-- [Bài 14. Spring Data JPA - Phần 2](https://youtu.be/zsiNVvCy9Uo)
-- [Bài 15. Spring Data JPA - Phần 3](https://youtu.be/jYbppQmNnO0)
-- [Bài 16. Spring Data JPA - Phần 4](https://youtu.be/SGMKy_DCUOM)
+
 
 ## Lấy Source Code Về
 - git clone https://github.com/luongquoctay87/tayjava-sample-code.git
-- git checkout spring-data-jpa
+- git checkout send-email

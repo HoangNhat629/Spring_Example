@@ -1,5 +1,6 @@
 package vn.tayjava.service.impl;
 
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -7,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.tayjava.dto.request.AddressDTO;
 import vn.tayjava.dto.request.UserRequestDTO;
@@ -17,10 +19,12 @@ import vn.tayjava.model.Address;
 import vn.tayjava.model.User;
 import vn.tayjava.repository.SearchRepository;
 import vn.tayjava.repository.UserRepository;
+import vn.tayjava.service.MailService;
 import vn.tayjava.service.UserService;
 import vn.tayjava.util.UserStatus;
 import vn.tayjava.util.UserType;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -37,9 +41,11 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final SearchRepository searchRepository;
+    private final MailService mailService;
 
     @Override
-    public long saveUser(UserRequestDTO request) {
+    @Transactional(rollbackFor = Exception.class)
+    public long saveUser(UserRequestDTO request) throws MessagingException, UnsupportedEncodingException {
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -64,9 +70,13 @@ public class UserServiceImpl implements UserService {
                         .addressType(a.getAddressType())
                         .build()));
 
-        userRepository.save(user);
+        User result = userRepository.save(user);
 
-        log.info("User has save!");
+        log.info("User has saved!");
+
+        if (result != null) {
+            mailService.sendConfirmLink(user.getEmail(), user.getId(), "code@123");
+        }
 
         return user.getId();
     }
