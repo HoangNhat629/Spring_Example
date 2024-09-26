@@ -6,4 +6,4 @@ ADD ${JAR_FILE} api-service.jar
 
 ENTRYPOINT ["java","-jar","api-service.jar"]
 
-EXPOSE 80
+EXPOSE 8080

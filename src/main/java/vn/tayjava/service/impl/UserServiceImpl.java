@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final SearchRepository searchRepository;
     private final MailService mailService;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -75,7 +77,8 @@ public class UserServiceImpl implements UserService {
         log.info("User has saved!");
 
         if (result != null) {
-            mailService.sendConfirmLink(user.getEmail(), user.getId(), "code@123");
+            // mailService.sendConfirmLink(user.getEmail(), user.getId(), "code@123");
+            kafkaTemplate.send("confirm-account-topic", String.format("email=%s,id=%s,code=%s", user.getEmail(), user.getId(), "code@123"));
         }
 
         return user.getId();

@@ -1,37 +1,74 @@
-version: '3.9'
-
 services:
-  postgres:
-    image: postgres
-    container_name: postgres
-    restart: unless-stopped
+#  postgres:
+#    image: postgres
+#    container_name: postgres
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: password
+#      PGDATA: /data/postgres
+#    volumes:
+#      - postgres:/data/postgres
+#      - ./initdb.sql:/docker-entrypoint-initdb.d/init.sql
+#    ports:
+#      - '5432:5432'
+#    networks:
+#      - backend
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      PGDATA: /data/postgres
-    volumes:
-      - postgres:/data/postgres
-      - ./initdb.sql:/docker-entrypoint-initdb.d/init.sql
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - '5432:5432'
-    networks:
-      - backend
+      - '22181:2181'
 
-  api-service:
-    container_name: api-service
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
     ports:
-      - '80:7749'
-    networks:
-      - backend
+      - '29092:29092'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-networks:
-  backend:
-    driver: bridge
+#  init-kafka-container:
+#    image: confluentinc/cp-kafka:latest
+#    depends_on:
+#      - kafka
+#    entrypoint: [ '/bin/sh', '-c' ]
+#    command: |
+#      "
+#      # rather than giving sleep 15 use this
+#      # to block init container to wait for Kafka broker to be ready
+#      kafka-topics --bootstrap-server kafka:9092 --list
+#
+#      # create init topics
+#      kafka-topics --create --partitions 3 --bootstrap-server kafka:9092 --topic input
+#      kafka-topics --create --bootstrap-server kafka:9092 --partitions 1 --topic output
 
-volumes:
-  postgres:
+#  api-service:
+#    container_name: api-service
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    env_file:
+#      - .env
+#    ports:
+#      - '80:7749'
+#    networks:
+#      - backend
+#
+#networks:
+#  backend:
+#    driver: bridge
+
+#volumes:
+#  postgres:

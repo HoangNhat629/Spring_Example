@@ -1,12 +1,11 @@
 server:
-  port: 80
+  port: 8080
 spring:
   application:
     name: tay-java-app
   profiles:
     active: @spring.profiles.active@
 
-# Health check
 management:
   endpoints:
     web:
@@ -16,7 +15,7 @@ management:
     health:
       probes:
         enabled: true
-  health: # config for EKS
+  health:
     livenessState:
       enabled: true
     readinessState:
@@ -27,7 +26,6 @@ management:
         step: 5s
         enabled: true
 
-# Logging
 logging:
   level:
     root: INFO
