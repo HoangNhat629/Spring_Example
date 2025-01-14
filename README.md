@@ -27,247 +27,129 @@
 
 ---
 
-## Tích hợp kafka
-- Start docker với `docker-compose.yml`
-```yml
-services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - '22181:2181'
+## Guideline: How to generate QR Code and Barcode in Spring Boot
 
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - '29092:29092'
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+### 1. Add dependency `ZXing Library`
 
 ```
-- Khởi tạo kafka
-```bash
-$ docker-compose up -d kafka
-```
-
-- Add dependency tại `pom.xml`
-```xml
 <dependency>
-    <groupId>org.springframework.kafka</groupId>
-    <artifactId>spring-kafka</artifactId>
+    <groupId>com.google.zxing</groupId>
+    <artifactId>core</artifactId>
+    <version>3.3.0</version>
+</dependency>
+<dependency>
+    <groupId>com.google.zxing</groupId>
+    <artifactId>javase</artifactId>
+    <version>3.3.0</version>
 </dependency>
 ```
 
-- application-dev.yml
-```yml
-spring:
-  kafka:
-    bootstrap-servers: localhost:29092
-```
+### 2. Init @Bean `BufferedImageHttpMessageConverter`
 
-- Config kafka producer
-```java
+```
 @Configuration
-@Slf4j(topic = "KAFKA-PRODUCER")
-public class KafkaProducerConfig {
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
-    @Value("${spring.profiles.active:Unknown}")
-    private String activeProfile;
+public class AppConfig {
 
     @Bean
-    public ProducerFactory<String, String> producerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-
-        if ("prod".equals(activeProfile)) {
-            configProps.put("security.protocol", "SSL");
-            configProps.put("ssl.truststore.type", "none");
-            configProps.put("endpoint.identification.algorithm", "");
-        }
-
-        return new DefaultKafkaProducerFactory<>(configProps);
-    }
-
-    @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
-    }
-
-    @Bean
-    public NewTopic confirmAccount() {
-        return new NewTopic("confirm-account-topic", 3, (short) 1);
+    public HttpMessageConverter<BufferedImage> createImageHttpMessageConverter() {
+        return new BufferedImageHttpMessageConverter();
     }
 }
 ```
 
-- Config kafka consumer
-```java
-@Configuration
-public class KafkaConsumerConfig {
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-
-    @Bean
-    public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
-        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "15000");
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-
-        return new DefaultKafkaConsumerFactory<>(props);
-    }
-
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
-            ConsumerFactory<String, String> consumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, String>
-                factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory);
-        return factory;
-    }
-}
+### 3. Generate Barcode & QR Code Image
+- Generate QR code
 ```
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.oned.EAN13Writer;
+import com.google.zxing.qrcode.QRCodeWriter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-- Kafka Producer gửi message từ UserService
-```java
-public class UserServiceImpl implements UserService {
+import java.awt.image.BufferedImage;
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-
-    public long saveUser(UserRequestDTO request) throws MessagingException, UnsupportedEncodingException {
-        User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .dateOfBirth(request.getDateOfBirth())
-                .gender(request.getGender())
-                .phone(request.getPhone())
-                .email(request.getEmail())
-                .username(request.getUsername())
-                .password(request.getPassword())
-                .status(request.getStatus())
-                .type(UserType.valueOf(request.getType().toUpperCase()))
-                .build();
-        request.getAddresses().forEach(a ->
-                user.saveAddress(Address.builder()
-                        .apartmentNumber(a.getApartmentNumber())
-                        .floor(a.getFloor())
-                        .building(a.getBuilding())
-                        .streetNumber(a.getStreetNumber())
-                        .street(a.getStreet())
-                        .city(a.getCity())
-                        .country(a.getCountry())
-                        .addressType(a.getAddressType())
-                        .build()));
-
-        User result = userRepository.save(user);
-
-        log.info("User has saved!");
-
-        if (result != null) {
-            kafkaTemplate.send("confirm-account-topic", String.format("email=%s,id=%s,code=%s", user.getEmail(), user.getId(), "code@123"));
-        }
-
-        return user.getId();
-    }
-}
-```
-
-- Kafka consumer nhận message từ `UserService`
-```java
-@Slf4j
 @Service
-@RequiredArgsConstructor
-public class MailService {
+@Slf4j(topic = "COMMON-SERVICE")
+public class CommonService {
 
-    private final JavaMailSender mailSender;
-    private final SpringTemplateEngine templateEngine;
+    public BufferedImage generateQRCodeImage(String text) throws WriterException {
+        log.info("Generate QR code image: {}", text);
 
-    @Value("${spring.mail.from}")
-    private String emailFrom;
+        QRCodeWriter barcodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = barcodeWriter.encode(text, BarcodeFormat.QR_CODE, 200, 200);
 
-    @Value("${endpoint.confirmUser}")
-    private String apiConfirmUser;
-
-    @KafkaListener(topics = "confirm-account-topic", groupId = "confirm-account-group")
-    public void sendConfirmLinkByKafka(String message) throws MessagingException, UnsupportedEncodingException {
-        log.info("Sending link to user, email={}", message);
-
-        String[] arr = message.split(",");
-        String emailTo = arr[0].substring(arr[0].indexOf('=') + 1);
-        String userId = arr[1].substring(arr[1].indexOf('=') + 1);
-        String verifyCode = arr[2].substring(arr[2].indexOf('=') + 1);
-
-        MimeMessage mimeMessage = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
-        Context context = new Context();
-
-        String linkConfirm = String.format("%s/%s?verifyCode=%s", apiConfirmUser, userId, verifyCode);
-
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("linkConfirm", linkConfirm);
-        context.setVariables(properties);
-
-        helper.setFrom(emailFrom, "Tây Java");
-        helper.setTo(emailTo);
-        helper.setSubject("Please confirm your account");
-        String html = templateEngine.process("confirm-email.html", context);
-        helper.setText(html, true);
-
-        mailSender.send(mimeMessage);
-        log.info("Link has sent to user, email={}, linkConfirm={}", emailTo, linkConfirm);
+        return MatrixToImageWriter.toBufferedImage(bitMatrix);
     }
-} 
+
+    public BufferedImage generateBarCodeImage(String barcode) throws WriterException {
+        log.info("Generate Bar code image: {}", barcode);
+
+        // TODO validate EAN13
+
+        EAN13Writer barcodeWriter = new EAN13Writer();
+        BitMatrix bitMatrix = barcodeWriter.encode(barcode, BarcodeFormat.EAN_13, 300, 150);
+
+        return MatrixToImageWriter.toBufferedImage(bitMatrix);
+    }
+}
 ```
 
-- Test API: create User
-```bash
-curl --location 'http://localhost:8080/user/' \
---header 'Content-Type: application/json' \
---header 'Accept: */*' \
---data-raw '{
-    "firstName": "Tây",
-    "lastName": "Java",
-    "email": "luongquoctay87@gmail.com",
-    "phone": "0123456789",
-    "dateOfBirth": "06/05/2003",
-    "status": "active",
-    "gender": "male",
-    "username": "tayjava",
-    "password": "password",
-    "type": "user",
-    "addresses": [
-        {
-            "apartmentNumber": "1",
-            "floor": "2",
-            "building": "A1",
-            "streetNumber": "10",
-            "street": "Pham Van Dong",
-            "city": "Hanoi",
-            "country": "Vietnam",
-            "addressType": 1
-        }
-    ]
-}'
+### 4. Building a REST API
+
+```
+import jakarta.mail.MessagingException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import vn.tayjava.dto.response.ResponseData;
+import vn.tayjava.dto.response.ResponseError;
+import vn.tayjava.service.CommonService;
+import vn.tayjava.service.MailService;
+
+import java.awt.image.BufferedImage;
+import java.io.UnsupportedEncodingException;
+
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
+@Slf4j
+@RestController
+@RequestMapping("/common")
+public record CommonController(CommonService commonService) {
+
+    @PostMapping(path = "/qrcode", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<BufferedImage> generateQRCode(@RequestParam String text) throws Exception {
+        log.info("Generate qrcode request");
+        return ResponseEntity.ok(commonService.generateQRCodeImage(text));
+    }
+
+    @PostMapping(path = "/barcode", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<BufferedImage> generateBarcode(@RequestParam String barcode) throws Exception {
+        log.info("Generate barcode request");
+        return ResponseEntity.ok(commonService.generateBarCodeImage(barcode));
+    }
+}
 ```
 
+### 5. Test
+Finally, we can use Postman or a browser to view the generated barcodes.
+
+- Test Barcodes
+
+```
+curl --location --request POST 'http://localhost:8080/common/barcode?barcode=1234567890128'
+```
+
+- Test QR code
+
+```
+curl --location --request POST 'http://localhost:8080/common/qrcode?text=tayjava'
+```
